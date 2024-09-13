@@ -1,0 +1,9 @@
+go 1.22.5
+
+use (
+	./cmd/defectdojo-exporter
+	./config
+	./internal/collector
+	./internal/defectdojo
+	./internal/initializer
+)
