@@ -829,18 +829,14 @@
       {
         "current": {
           "selected": true,
-          "text": [
-            "clientpp"
-          ],
-          "value": [
-            "clientpp"
-          ]
+          "text": [],
+          "value": []
         },
         "datasource": {
           "type": "prometheus",
           "uid": "af1438b4-d94c-460c-833b-b6fccbcbf934"
         },
-        "definition": "label_values(dojo_vulnerabilities_active,product_name)",
+        "definition": "label_values(dojo_vulnerabilities_active,product)",
         "hide": 0,
         "includeAll": false,
         "multi": true,
@@ -848,7 +844,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(dojo_vulnerabilities_active,product_name)",
+          "query": "label_values(dojo_vulnerabilities_active,product)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
@@ -860,7 +856,7 @@
       {
         "allValue": "",
         "current": {
-          "selected": true,
+          "selected": false,
           "text": [
             "All"
           ],
@@ -931,6 +927,6 @@
   "timezone": "browser",
   "title": "DefectDojo Exporter",
   "uid": "fdxqlkutrij28b",
-  "version": 12,
+  "version": 13,
   "weekStart": ""
 }
