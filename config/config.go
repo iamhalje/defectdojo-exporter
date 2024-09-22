@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log"
+	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -14,16 +14,16 @@ type Config struct {
 }
 
 // LoadConfig load config.yaml
-func LoadConfig() *Config {
-	file, err := os.ReadFile("config.yaml")
+func LoadConfig(fileName string) (*Config, error) {
+	file, err := os.ReadFile(fileName)
 	if err != nil {
-		log.Fatal("error reading config file: ", err)
+		return nil, fmt.Errorf("error reading config file: %w", err)
 	}
 
-	var config Config
-	if err := yaml.Unmarshal(file, &config); err != nil {
-		log.Fatal("error unmarshalling config file: ", err)
+	var cfg Config
+	if err := yaml.Unmarshal(file, &cfg); err != nil {
+		return nil, fmt.Errorf("error unmarshalling config file: %w", err)
 	}
 
-	return &config
+	return &cfg, nil
 }
