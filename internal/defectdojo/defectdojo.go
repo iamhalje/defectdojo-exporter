@@ -120,7 +120,7 @@ func CollectCWEs(vulnerabilities []Finding) map[int]bool {
 
 // makeRequest send request in API DefectDojo
 func makeRequest(url, token string) ([]byte, error) {
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 30 * time.Second}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
