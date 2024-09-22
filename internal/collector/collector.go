@@ -147,8 +147,8 @@ func CollectMetrics(url, token string) {
 				}
 			}(product)
 		}
-
 		wg.Wait()
+		time.Sleep(5 * time.Minute)
 	}
 }
 
