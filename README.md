@@ -21,13 +21,23 @@ The application collects and exposes the following metrics:
 
 ## Configuration
 
-Create a config.yaml file in the folder with the binary exporter to configure the following variables:
+The application uses a configuration file, config.yaml, which provides necessary details for connecting to DefectDojo and configuring the HTTP server. You can specify the path to the configuration file using the --config flag.
 
 ```yaml
-DD_TOKEN: "12345678901234567890"
+# API token used to authenticate with DefectDojo
+DD_TOKEN: "kyead0535e212ae08d1d8287085dcccef1af53le"
+
+# URL of the DefectDojo instance to collect metrics from
 DD_URL: "https://defectdojo.com"
-# port for running exporter
+
+# Port number for exposing the metrics endpoint
 PORT: 8080
 ```
 
-Once configured and running, the collector exposes the metrics at the /metrics endpoint.
+## Running
+
+By default, the application looks for config.yaml in the current directory if the --config flag is not provided.
+
+```bash
+./defectdojo-exporter --config dd-exporter.yaml
+```
