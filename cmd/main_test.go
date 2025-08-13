@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,22 +10,7 @@ import (
 func TestMainFunctionGET(t *testing.T) {
 
 	mux := http.NewServeMux()
-
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, err := fmt.Fprint(w, "<h2>DefectDojo Exporter</h2>")
-		if err != nil {
-			t.Errorf("unexpected error writing to response: %v", err)
-		}
-		_, err = fmt.Fprint(w, "<p><a href='/metrics'>/metrics</a> -  available service metrics</p>")
-		if err != nil {
-			t.Errorf("unexpected error writing to response: %v", err)
-		}
-	})
+	registerHandlers(mux)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
@@ -53,22 +37,7 @@ func TestMainFunctionGET(t *testing.T) {
 
 func TestMainFunctionPOST(t *testing.T) {
 	mux := http.NewServeMux()
-
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, err := fmt.Fprint(w, "<h2>DefectDojo Exporter</h2>")
-		if err != nil {
-			t.Errorf("unexpected error writing to response: %v", err)
-		}
-		_, err = fmt.Fprint(w, "<p><a href='/metrics'>/metrics</a> -  available service metrics</p>")
-		if err != nil {
-			t.Errorf("unexpected error writing to response: %v", err)
-		}
-	})
+	registerHandlers(mux)
 
 	req := httptest.NewRequest(http.MethodPost, "/", nil)
 	w := httptest.NewRecorder()

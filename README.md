@@ -13,7 +13,7 @@ The application collects and exposes the following metrics:
 - `dojo_vulnerabilities_verified`: Number of verified vulnerabilities.
 - `dojo_vulnerabilities_mitigated`: Number of mitigated vulnerabilities.
 
-## Lables
+## Labels
 
 - `product`: The name or identifier of the product associated with the vulnerabilities.
 - `product_type`: The type of the product.
@@ -22,7 +22,7 @@ The application collects and exposes the following metrics:
 
 ## Configuration
 
-The exporter supports configureation parameters via command-line flags. Additionally, if run with the flag `-envflag.enable=true`, any unset command-line flag will automatically fallback to the corresponding environment variable with the same name.
+The exporter supports configuration parameters via command-line flags. Additionally, if run with the flag `-envflag.enable=true`, any unset command-line flag will automatically fallback to the corresponding environment variable with the same name.
 
 For example, if `-DD_TOKEN` is not provided, the exporter will look for the environment variable `DD_TOKEN`.
 
@@ -45,7 +45,7 @@ Available flags:
 -port int
       Port number where the exporter HTTP server will listen (default 8080)
 -use-engagement-update-check
-      Skip collection if no engagement updates, need disable if vulnerabiltiies aren't added via engagement (default true)
+      Skip collection if no engagement updates; disable if vulnerabilities aren't added via engagement (default true)
 -version
       Show DefectDojo Exporter version
 ```

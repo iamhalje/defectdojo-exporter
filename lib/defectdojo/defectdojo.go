@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-var (
-)
 
+// Finding represents a single DefectDojo finding (vulnerability) of a product.
+// Only the fields needed for metric aggregation are included.
 type Finding struct {
 	Active       bool   `json:"active"`
 	Severity     string `json:"severity"`
@@ -26,37 +26,45 @@ type Finding struct {
 	Mitigated    bool   `json:"is_mitigated"`
 }
 
+// FindingsResponse is the paginated response from /api/v2/findings/.
 type FindingsResponse struct {
 	Next    string    `json:"next"`
 	Results []Finding `json:"results"`
 }
 
+// Product is a DefectDojo product.
 type Product struct {
 	ID   int    `json:"id"`
 	Type int    `json:"prod_type"`
 	Name string `json:"name"`
 }
 
+// ProductsResponse is the paginated response from /api/v2/products/.
 type ProductsResponse struct {
 	Next    string    `json:"next"`
 	Results []Product `json:"results"`
 }
 
+// Engagement represents a DefectDojo engagement; only the fields required for
+// update-time checks are included.
 type Engagement struct {
 	ID      int       `json:"id"`
 	Product int       `json:"product"`
 	Updated time.Time `json:"updated"`
 }
 
+// EngagementsResponse is the paginated response from /api/v2/engagements/.
 type EngagementsResponse struct {
 	Next    string       `json:"next"`
 	Results []Engagement `json:"results"`
 }
 
+// Type is a product type in DefectDojo.
 type Type struct {
 	Name string `json:"name"`
 }
 
+// TypeResponse is the response from /api/v2/product_types/.
 type TypeResponse struct {
 	Results []Type `json:"results"`
 }
@@ -108,26 +116,32 @@ func FetchVulnerabilities(product, link, token string, timeout time.Duration) ([
 	return vulnerabilities, nil
 }
 
-// FetchProductType retrieves the product type
-func FetchProductType(product int, link, token string, timeout time.Duration) (string, error) {
-	endpoint := fmt.Sprintf("%s/api/v2/product_types/?id=%d&limit=1", link, product)
+// FetchProductType retrieves the product type name for the given product type ID.
+func FetchProductType(productTypeID int, link, token string, timeout time.Duration) (string, error) {
+	if name, ok := getCachedProductTypeName(productTypeID); ok {
+		return name, nil
+	}
+
+	endpoint := fmt.Sprintf("%s/api/v2/product_types/?id=%d&limit=1", link, productTypeID)
 
 	resp, err := makeRequest(endpoint, token, timeout)
 	if err != nil {
-		log.Printf("Error fetching product type for product %d: %v", product, err)
+		log.Printf("Error fetching product type for product %d: %v", productTypeID, err)
 		return "", err
 	}
 	var productTypeResp TypeResponse
 	if err := json.Unmarshal(resp, &productTypeResp); err != nil {
-		log.Printf("Error unmarshalling product type response for product %d: %v", product, err)
+		log.Printf("Error unmarshalling product type response for product %d: %v", productTypeID, err)
 		return "", err
 	}
 
 	if len(productTypeResp.Results) == 0 {
-		return "", fmt.Errorf("no product type found for product %d", product)
+		return "", fmt.Errorf("no product type found for product %d", productTypeID)
 	}
 
-	return productTypeResp.Results[0].Name, nil
+	name := productTypeResp.Results[0].Name
+	setCachedProductTypeName(productTypeID, name)
+	return name, nil
 }
 
 // FetchEngagementUpdatedTimestamp retrieves the timestamp of the most recent engagement

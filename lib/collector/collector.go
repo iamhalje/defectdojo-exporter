@@ -11,6 +11,17 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	statusActive        = "active"
+	statusDuplicate     = "duplicate"
+	statusUnderReview   = "under_review"
+	statusFalsePositive = "false_positive"
+	statusOutOfScope    = "out_of_scope"
+	statusRiskAccepted  = "risk_accepted"
+	statusVerified      = "verified"
+	statusMitigated     = "mitigated"
+)
+
 // CollectMetrics main collector
 func CollectMetrics(link, token string, concurrency int, interval time.Duration, timeout time.Duration, useEngagementUpdate bool) {
 	limiter := make(chan struct{}, concurrency)
@@ -63,14 +74,14 @@ func CollectMetrics(link, token string, concurrency int, interval time.Duration,
 
 				type statusCountMap map[string]map[string]float64 // severity -> cwe -> count
 				statusMaps := map[string]statusCountMap{
-					"active":         {},
-					"duplicate":      {},
-					"under_review":   {},
-					"false_positive": {},
-					"out_of_scope":   {},
-					"risk_accepted":  {},
-					"verified":       {},
-					"mitigated":      {},
+					statusActive:        {},
+					statusDuplicate:     {},
+					statusUnderReview:   {},
+					statusFalsePositive: {},
+					statusOutOfScope:    {},
+					statusRiskAccepted:  {},
+					statusVerified:      {},
+					statusMitigated:     {},
 				}
 
 				// Aggregate the number of vulnerabilities by severity and CWE
@@ -78,28 +89,28 @@ func CollectMetrics(link, token string, concurrency int, interval time.Duration,
 					severity := strings.ToLower(vuln.Severity)
 
 					if vuln.Active {
-						increment(statusMaps["active"], severity, fmt.Sprintf("%d", vuln.CWE))
+						increment(statusMaps[statusActive], severity, fmt.Sprintf("%d", vuln.CWE))
 					}
 					if vuln.Duplicate {
-						increment(statusMaps["duplicate"], severity, fmt.Sprintf("%d", vuln.CWE))
+						increment(statusMaps[statusDuplicate], severity, fmt.Sprintf("%d", vuln.CWE))
 					}
 					if vuln.UnderReview {
-						increment(statusMaps["under_review"], severity, fmt.Sprintf("%d", vuln.CWE))
+						increment(statusMaps[statusUnderReview], severity, fmt.Sprintf("%d", vuln.CWE))
 					}
 					if vuln.FalseP {
-						increment(statusMaps["false_positive"], severity, fmt.Sprintf("%d", vuln.CWE))
+						increment(statusMaps[statusFalsePositive], severity, fmt.Sprintf("%d", vuln.CWE))
 					}
 					if vuln.OutOfScope {
-						increment(statusMaps["out_of_scope"], severity, fmt.Sprintf("%d", vuln.CWE))
+						increment(statusMaps[statusOutOfScope], severity, fmt.Sprintf("%d", vuln.CWE))
 					}
 					if vuln.RiskAccepted {
-						increment(statusMaps["risk_accepted"], severity, fmt.Sprintf("%d", vuln.CWE))
+						increment(statusMaps[statusRiskAccepted], severity, fmt.Sprintf("%d", vuln.CWE))
 					}
 					if vuln.Verified {
-						increment(statusMaps["verified"], severity, fmt.Sprintf("%d", vuln.CWE))
+						increment(statusMaps[statusVerified], severity, fmt.Sprintf("%d", vuln.CWE))
 					}
 					if vuln.Mitigated {
-						increment(statusMaps["mitigated"], severity, fmt.Sprintf("%d", vuln.CWE))
+						increment(statusMaps[statusMitigated], severity, fmt.Sprintf("%d", vuln.CWE))
 					}
 				}
 
@@ -138,14 +149,14 @@ func CollectMetrics(link, token string, concurrency int, interval time.Duration,
 					}
 				}
 
-				update(defectdojo.VulnActiveGauge, defectdojo.PrevActive, statusMaps["active"])
-				update(defectdojo.VulnDuplicateGauge, defectdojo.PrevDuplicate, statusMaps["duplicate"])
-				update(defectdojo.VulnUnderReviewGauge, defectdojo.PrevUnderReview, statusMaps["under_review"])
-				update(defectdojo.VulnFalsePositiveGauge, defectdojo.PrevFalsePositive, statusMaps["false_positive"])
-				update(defectdojo.VulnOutOfScopeGauge, defectdojo.PrevOutOfScope, statusMaps["out_of_scope"])
-				update(defectdojo.VulnRiskAcceptedGauge, defectdojo.PrevRiskAccepted, statusMaps["risk_accepted"])
-				update(defectdojo.VulnVerifiedGauge, defectdojo.PrevVerified, statusMaps["verified"])
-				update(defectdojo.VulnMitigatedGauge, defectdojo.PrevMitigated, statusMaps["mitigated"])
+				update(defectdojo.VulnActiveGauge, defectdojo.PrevActive, statusMaps[statusActive])
+				update(defectdojo.VulnDuplicateGauge, defectdojo.PrevDuplicate, statusMaps[statusDuplicate])
+				update(defectdojo.VulnUnderReviewGauge, defectdojo.PrevUnderReview, statusMaps[statusUnderReview])
+				update(defectdojo.VulnFalsePositiveGauge, defectdojo.PrevFalsePositive, statusMaps[statusFalsePositive])
+				update(defectdojo.VulnOutOfScopeGauge, defectdojo.PrevOutOfScope, statusMaps[statusOutOfScope])
+				update(defectdojo.VulnRiskAcceptedGauge, defectdojo.PrevRiskAccepted, statusMaps[statusRiskAccepted])
+				update(defectdojo.VulnVerifiedGauge, defectdojo.PrevVerified, statusMaps[statusVerified])
+				update(defectdojo.VulnMitigatedGauge, defectdojo.PrevMitigated, statusMaps[statusMitigated])
 
 			}(p.Name, p.ID, p.Type)
 		}

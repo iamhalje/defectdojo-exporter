@@ -27,7 +27,7 @@ var (
 	concurrency         = flag.Int("concurrency", 5, "Maximum number of concurrent API requests to DefectDojo")
 	interval            = flag.Duration("interval", 5*time.Minute, "Sleep interval duration between metric collection cycles")
 	timeout             = flag.Duration("timeout", 30*time.Second, "API request timeout")
-	useEngagementUpdate = flag.Bool("use-engagement-update-check", true, "Skip collection if no engagement updates, need disable if vulnerabiltiies aren't added via engagement")
+	useEngagementUpdate = flag.Bool("use-engagement-update-check", true, "Skip collection if no engagement updates; disable if vulnerabilities aren't added via engagement")
 )
 
 func main() {
@@ -52,35 +52,10 @@ func main() {
 
 	go collector.CollectMetrics(*ddURL, *ddToken, *concurrency, *interval, *timeout, *useEngagementUpdate)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, err := fmt.Fprint(w, "<h2>DefectDojo Exporter</h2>")
-		if err != nil {
-			log.Fatalf("Error writing response: %v", err)
-		}
-		_, err = fmt.Fprintf(w, "<p><a href='/metrics'>/metrics</a> -  available service metrics</p>")
-		if err != nil {
-			log.Fatalf("Error writing reponse: %v", err)
-		}
-	})
+	mux := http.NewServeMux()
+	registerHandlers(mux)
 
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
-	})
-
-	http.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
-	})
-
-	http.Handle("/metrics", promhttp.Handler())
-
-	srv := &http.Server{Addr: fmt.Sprintf(":%d", *port), Handler: nil}
+	srv := &http.Server{Addr: fmt.Sprintf(":%d", *port), Handler: mux}
 
 	go func() {
 		log.Printf("Starting Exporter on :%d", *port)
@@ -100,4 +75,34 @@ func main() {
 	} else {
 		log.Println("Exporter stopped gracefully")
 	}
+}
+
+func registerHandlers(mux *http.ServeMux) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, err := fmt.Fprint(w, "<h2>DefectDojo Exporter</h2>")
+		if err != nil {
+			log.Fatalf("Error writing response: %v", err)
+		}
+		_, err = fmt.Fprintf(w, "<p><a href='/metrics'>/metrics</a> -  available service metrics</p>")
+		if err != nil {
+			log.Fatalf("Error writing reponse: %v", err)
+		}
+	})
+
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	})
+
+	mux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	})
+
+	mux.Handle("/metrics", promhttp.Handler())
 }
