@@ -60,39 +60,6 @@ export DD_TOKEN=your_token
 ./defectdojo-exporter-linux-amd64 --envflag.enable=true --port=9002
 ```
 
-## Quick start
-
-- Download a release binary or build locally:
-  - Build locally: `make build` (outputs `bin/defectdojo-exporter-pure`)
-  - Cross-compile: `make crossbuild` or `make docker-crossbuild`
-- Run with environment variables as shown above.
-
-## Docker
-
-```bash
-docker run --rm -p 9002:9002 \
-  -e DD_URL=https://defectdojo.example.com \
-  -e DD_TOKEN=your_token \
-  halje/defectdojo-exporter:latest \
-  --envflag.enable=true --port=9002
-```
-
-## Kubernetes scrape config (Prometheus)
-
-```yaml
-scrape_configs:
-  - job_name: defectdojo-exporter
-    metrics_path: /metrics
-    static_configs:
-      - targets: ["defectdojo-exporter.default.svc:8080"]
-```
-
-## HTTP endpoints
-
-- `/metrics`: Prometheus metrics
-- `/healthz`: liveness probe (200 OK)
-- `/ready`: readiness probe (200 OK)
-- `/`: small HTML index page
 
 ## Performance tuning
 
