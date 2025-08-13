@@ -162,7 +162,7 @@ func FetchEngagementUpdatedTimestamp(product int, link, token string, timeout ti
 
 // makeRequest send request in API DefectDojo
 func makeRequest(link, token string, timeout time.Duration) ([]byte, error) {
-	client := &http.Client{Timeout: timeout}
+	client := getHTTPClient(timeout)
 	req, err := http.NewRequest("GET", link, nil)
 	if err != nil {
 		return nil, err
