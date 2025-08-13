@@ -59,3 +59,78 @@ export DD_URL=https://defectdojo.com
 export DD_TOKEN=your_token
 ./defectdojo-exporter-linux-amd64 --envflag.enable=true --port=9002
 ```
+
+## Quick start
+
+- Download a release binary or build locally:
+  - Build locally: `make build` (outputs `bin/defectdojo-exporter-pure`)
+  - Cross-compile: `make crossbuild` or `make docker-crossbuild`
+- Run with environment variables as shown above.
+
+## Docker
+
+```bash
+docker run --rm -p 9002:9002 \
+  -e DD_URL=https://defectdojo.example.com \
+  -e DD_TOKEN=your_token \
+  halje/defectdojo-exporter:latest \
+  --envflag.enable=true --port=9002
+```
+
+## Kubernetes scrape config (Prometheus)
+
+```yaml
+scrape_configs:
+  - job_name: defectdojo-exporter
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["defectdojo-exporter.default.svc:8080"]
+```
+
+## HTTP endpoints
+
+- `/metrics`: Prometheus metrics
+- `/healthz`: liveness probe (200 OK)
+- `/ready`: readiness probe (200 OK)
+- `/`: small HTML index page
+
+## Performance tuning
+
+- `-concurrency`: Max concurrent DefectDojo API requests. Increase for many products; avoid overloading your Dojo.
+- `-interval`: Collection cadence. Lower means higher load; now paced using a ticker to reduce drift.
+- `-timeout`: Per-request timeout to the API.
+- `-use-engagement-update-check`: When true (default), skip products whose engagements haven't changed since last run.
+
+## Configuration via environment variables
+
+- Enable with `--envflag.enable=true`. Each CLI flag falls back to an env var with the same name (e.g., `DD_URL`, `DD_TOKEN`).
+- Optional `--envflag.prefix=YOURPREFIX_` to require a prefix for env vars (e.g., `YOURPREFIX_DD_URL`).
+
+## Helm and dashboards
+
+- Helm chart: see `helm/` for deployment templates.
+- Dashboards: see `dashboards/` for example Grafana dashboards.
+
+## Build from source
+
+- Tests: `make tests`
+- Formatting: `make fmt`
+- Lint: `make golangci-lint`
+- Security: `make govulncheck`
+- All checks: `make check-all`
+
+## Version
+
+```bash
+./defectdojo-exporter-linux-amd64 --version
+```
+
+## Security notes
+
+- Use HTTPS for `DD_URL`.
+- Store `DD_TOKEN` securely (e.g., Kubernetes Secret).
+- The exporter only reads data and exposes aggregated metrics; ensure network policies restrict access to `/metrics` as appropriate.
+
+## License
+
+See `LICENSE`.
