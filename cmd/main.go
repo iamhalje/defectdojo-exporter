@@ -55,7 +55,14 @@ func main() {
 	mux := http.NewServeMux()
 	registerHandlers(mux)
 
-	srv := &http.Server{Addr: fmt.Sprintf(":%d", *port), Handler: mux}
+	srv := &http.Server{
+		Addr:              fmt.Sprintf(":%d", *port),
+		Handler:           mux,
+		ReadTimeout:       10 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
 
 	go func() {
 		log.Printf("Starting Exporter on :%d", *port)

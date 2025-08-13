@@ -26,7 +26,12 @@ const (
 func CollectMetrics(link, token string, concurrency int, interval time.Duration, timeout time.Duration, useEngagementUpdate bool) {
 	limiter := make(chan struct{}, concurrency)
 
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
 	for {
+		start := time.Now()
+
 		products, err := defectdojo.FetchProducts(link, token, timeout)
 		if err != nil {
 			log.Printf("Error fetching products: %v", err)
@@ -161,7 +166,21 @@ func CollectMetrics(link, token string, concurrency int, interval time.Duration,
 			}(p.Name, p.ID, p.Type)
 		}
 		wg.Wait()
-		time.Sleep(interval)
+
+		// Sleep precisely until the next tick from the start of this iteration
+		select {
+		case <-ticker.C:
+			// proceed
+		default:
+			// If iteration took longer than interval, drain one tick if available
+			// to avoid backlog and proceed immediately.
+			select {
+			case <-ticker.C:
+			default:
+			}
+		}
+
+		_ = start // reserved in case we want to log iteration duration later
 	}
 }
 
