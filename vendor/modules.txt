@@ -1,5 +1,5 @@
-# github.com/VictoriaMetrics/VictoriaMetrics v1.123.0
-## explicit; go 1.24.5
+# github.com/VictoriaMetrics/VictoriaMetrics v1.127.0
+## explicit; go 1.25.1
 github.com/VictoriaMetrics/VictoriaMetrics/lib/envflag
 github.com/VictoriaMetrics/VictoriaMetrics/lib/envtemplate
 # github.com/beorn7/perks v1.0.1

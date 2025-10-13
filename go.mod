@@ -1,9 +1,9 @@
 module github.com/iamhalje/defectdojo-exporter
 
-go 1.24.5
+go 1.25.1
 
 require (
-	github.com/VictoriaMetrics/VictoriaMetrics v1.123.0
+	github.com/VictoriaMetrics/VictoriaMetrics v1.127.0
 	github.com/prometheus/client_golang v1.23.2
 	go.uber.org/automaxprocs v1.6.0
 )
