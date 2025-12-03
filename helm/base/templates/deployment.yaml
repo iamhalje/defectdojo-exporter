@@ -34,7 +34,7 @@ spec:
             - |
               echo "${CA_BUNDLE}" > /usr/local/share/ca-certificates/custom-ca.crt
               update-ca-certificates
-              ./defectdojo-exporter-linux-amd64 \
+              ./defectdojo-exporter \
               -envflag.enable=true \
               -port={{ .Values.args.port }} \
               -concurrency={{ .Values.args.concurrency }} \

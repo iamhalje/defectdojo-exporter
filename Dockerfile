@@ -9,17 +9,12 @@ WORKDIR /src
 COPY . .
 
 ARG APP_NAME
-ARG GOOS
-ARG GOARCH
 ARG PKG_PREFIX
 ARG GO_BUILDINFO
 
 ENV GO_LDFLAGS="-s -w ${GO_BUILDINFO}"
 
-RUN CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} \
-    go build -ldflags "${GO_LDFLAGS}" -o /out/${APP_NAME}-${GOOS}-${GOARCH} ${PKG_PREFIX}/cmd
-
-RUN if [ "${GOOS}" = "linux" ] || [ "${GOOS}" = "darwin" ]; then strip /out/${APP_NAME}-${GOOS}-${GOARCH} || true; fi
+RUN CGO_ENABLED=0 go build -ldflags "${GO_LDFLAGS}" -o /out/${APP_NAME} ${PKG_PREFIX}/cmd
 
 FROM alpine:latest AS export-stage
 
@@ -27,4 +22,4 @@ RUN apk add --no-cache ca-certificates
 
 COPY --from=builder /out/ ./
 
-ENTRYPOINT ["./defectdojo-exporter-linux-amd64"]
+ENTRYPOINT ["./defectdojo-exporter"]

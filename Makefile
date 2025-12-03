@@ -26,6 +26,10 @@ GOOS_ARCHES = \
   openbsd/amd64 \
   windows/amd64
 
+# Comma-separated list of target platforms for docker buildx
+# Note: docker buildx typically supports linux targets; keep others only if your builder supports them
+DOCKER_GOOS_ARCHES ?= linux/amd64,linux/arm64
+
 .PHONY: $(MAKECMDGOALS)
 
 crossbuild:
@@ -111,10 +115,9 @@ docker-crossbuild:
 			--output type=local,dest=bin . ; \
 	done
 
-docker-build-amd64-publish:
-	docker build \
-		--build-arg GOOS=linux \
-		--build-arg GOARCH=amd64 \
+docker-build-multiarch-publish:
+	DOCKER_BUILDKIT=1 docker buildx build --push\
+		--platform $(DOCKER_GOOS_ARCHES) \
 		--build-arg APP_NAME=$(APP_NAME) \
 		--build-arg PKG_PREFIX=$(PKG_PREFIX) \
 		--build-arg GO_BUILDINFO="$(GO_BUILDINFO)" \
@@ -122,8 +125,6 @@ docker-build-amd64-publish:
 		-t halje/defectdojo-exporter:latest \
 		-t halje/defectdojo-exporter:$(VERSION) \
 		.
-	docker push halje/defectdojo-exporter:latest
-	docker push halje/defectdojo-exporter:$(VERSION)
 
 golangci-lint: install-golangci-lint
 	GOEXPERIMENT=synctest golangci-lint run

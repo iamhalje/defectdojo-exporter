@@ -29,4 +29,4 @@ jobs:
       - name: Build and push Docker image
         env:
           VERSION: ${{ github.ref_name }}
-        run: make docker-build-amd64-publish VERSION=${{ github.ref_name }}
+        run: make docker-build-multiarch-publish VERSION=${{ github.ref_name }}
