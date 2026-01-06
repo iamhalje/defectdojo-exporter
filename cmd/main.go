@@ -10,8 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	_ "go.uber.org/automaxprocs"
-
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/envflag"
 	"github.com/iamhalje/defectdojo-exporter/lib/buildinfo"
 	"github.com/iamhalje/defectdojo-exporter/lib/collector"
