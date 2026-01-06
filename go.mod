@@ -5,7 +5,6 @@ go 1.25.5
 require (
 	github.com/VictoriaMetrics/VictoriaMetrics v1.132.0
 	github.com/prometheus/client_golang v1.23.2
-	go.uber.org/automaxprocs v1.6.0
 )
 
 require (
