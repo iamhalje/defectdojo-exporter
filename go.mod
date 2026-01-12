@@ -3,7 +3,7 @@ module github.com/iamhalje/defectdojo-exporter
 go 1.25.5
 
 require (
-	github.com/VictoriaMetrics/VictoriaMetrics v1.132.0
+	github.com/VictoriaMetrics/VictoriaMetrics v1.133.0
 	github.com/prometheus/client_golang v1.23.2
 )
 
