@@ -1,5 +1,5 @@
-# github.com/VictoriaMetrics/VictoriaMetrics v1.133.0
-## explicit; go 1.25.5
+# github.com/VictoriaMetrics/VictoriaMetrics v1.134.0
+## explicit; go 1.25.6
 github.com/VictoriaMetrics/VictoriaMetrics/lib/atomicutil
 github.com/VictoriaMetrics/VictoriaMetrics/lib/envflag
 github.com/VictoriaMetrics/VictoriaMetrics/lib/envtemplate
