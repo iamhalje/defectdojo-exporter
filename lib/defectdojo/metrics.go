@@ -55,6 +55,37 @@ var VulnMitigatedGauge = prometheus.NewGaugeVec(
 	[]string{"product", "product_type", "severity", "cwe"},
 )
 
+// VulnSLABreachedGauge reports the number of active vulnerabilities currently past their SLA deadline, grouped by labels.
+var VulnSLABreachedGauge = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{Name: "dojo_vulnerabilities_sla_breached", Help: "Number of active vulnerabilities past their SLA deadline in DefectDojo"},
+	[]string{"product", "product_type", "severity", "cwe"},
+)
+
+// VulnMitigatedWithinSLAGauge reports the number of mitigated vulnerabilities fixed within their SLA.
+var VulnMitigatedWithinSLAGauge = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{Name: "dojo_vulnerabilities_mitigated_within_sla", Help: "Number of mitigated vulnerabilities fixed within their SLA in DefectDojo"},
+	[]string{"product", "product_type", "severity"},
+)
+
+// VulnMitigatedOutsideSLAGauge reports the number of mitigated vulnerabilities fixed after their SLA deadline.
+var VulnMitigatedOutsideSLAGauge = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{Name: "dojo_vulnerabilities_mitigated_outside_sla", Help: "Number of mitigated vulnerabilities fixed after their SLA deadline in DefectDojo"},
+	[]string{"product", "product_type", "severity"},
+)
+
+// VulnFixTimeDaysSumGauge reports the total days from discovery to mitigation across mitigated vulnerabilities.
+// Divide by dojo_vulnerabilities_fix_time_days_count to get the average fix time.
+var VulnFixTimeDaysSumGauge = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{Name: "dojo_vulnerabilities_fix_time_days_sum", Help: "Total days from discovery to mitigation across mitigated vulnerabilities in DefectDojo"},
+	[]string{"product", "product_type", "severity"},
+)
+
+// VulnFixTimeDaysCountGauge reports the number of mitigated vulnerabilities included in dojo_vulnerabilities_fix_time_days_sum.
+var VulnFixTimeDaysCountGauge = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{Name: "dojo_vulnerabilities_fix_time_days_count", Help: "Number of mitigated vulnerabilities included in dojo_vulnerabilities_fix_time_days_sum"},
+	[]string{"product", "product_type", "severity"},
+)
+
 var PrevEngagementUpdateTimes = make(map[string]time.Time)
 
 var (
@@ -66,6 +97,14 @@ var (
 	PrevRiskAccepted  = make(map[string]map[string]float64)
 	PrevVerified      = make(map[string]map[string]float64)
 	PrevMitigated     = make(map[string]map[string]float64)
+	PrevSLABreached   = make(map[string]map[string]float64)
+
+	// Severity-keyed (product -> severity -> value) previous values for the
+	// SLA compliance and fix-time metrics.
+	PrevWithinSLA    = make(map[string]map[string]float64)
+	PrevOutsideSLA   = make(map[string]map[string]float64)
+	PrevFixTimeSum   = make(map[string]map[string]float64)
+	PrevFixTimeCount = make(map[string]map[string]float64)
 )
 
 var MU sync.Mutex

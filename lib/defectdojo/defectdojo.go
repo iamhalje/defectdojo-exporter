@@ -1,7 +1,9 @@
 package defectdojo
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -9,6 +11,38 @@ import (
 	"net/url"
 	"time"
 )
+
+// ErrAuthFailed is returned by FetchAPIToken when DefectDojo rejects the
+// provided credentials, as opposed to transient network or availability errors.
+var ErrAuthFailed = errors.New("defectdojo authentication failed")
+
+const dojoDateLayout = "2006-01-02"
+
+// DojoDate handles DefectDojo date-only JSON fields formatted as "2006-01-02".
+type DojoDate struct {
+	time.Time
+}
+
+func (d *DojoDate) UnmarshalJSON(data []byte) error {
+	s := string(bytes.Trim(data, `"`))
+	if s == "null" || s == "" {
+		d.Time = time.Time{}
+		return nil
+	}
+	t, err := time.Parse(dojoDateLayout, s)
+	if err != nil {
+		return err
+	}
+	d.Time = t
+	return nil
+}
+
+func (d DojoDate) MarshalJSON() ([]byte, error) {
+	if d.IsZero() {
+		return []byte("null"), nil
+	}
+	return []byte(`"` + d.Format(dojoDateLayout) + `"`), nil
+}
 
 type Finding struct {
 	Active       bool   `json:"active"`
@@ -21,6 +55,14 @@ type Finding struct {
 	UnderReview  bool   `json:"under_review"`
 	Verified     bool   `json:"verified"`
 	Mitigated    bool   `json:"is_mitigated"`
+	// Date is the discovery date of the finding.
+	Date DojoDate `json:"date"`
+	// MitigatedAt is the timestamp the finding was mitigated, nil while open.
+	MitigatedAt *time.Time `json:"mitigated"`
+	// SLADaysRemaining is nil when SLA tracking is disabled for the finding.
+	// For mitigated findings DefectDojo computes it against the mitigation
+	// date, so a negative value means the fix landed after the SLA deadline.
+	SLADaysRemaining *int `json:"sla_days_remaining"`
 }
 
 type FindingsResponse struct {
@@ -161,6 +203,54 @@ func FetchEngagementUpdatedTimestamp(product int, link, token string, timeout ti
 	}
 
 	return latestUpdate, nil
+}
+
+// FetchAPIToken exchanges a username and password for a DefectDojo API token
+// via /api/v2/api-token-auth/. Rejected credentials return ErrAuthFailed;
+// any other failure (network, 5xx) is transient and safe to retry.
+func FetchAPIToken(link, username, password string, timeout time.Duration) (string, error) {
+	endpoint := fmt.Sprintf("%s/api/v2/api-token-auth/", link)
+
+	body, err := json.Marshal(map[string]string{"username": username, "password": password})
+	if err != nil {
+		return "", err
+	}
+
+	client := getHTTPClient(timeout)
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("Error closing response body: %v", err)
+		}
+	}()
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+	case http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden:
+		return "", fmt.Errorf("HTTP error %d: %s: %w", resp.StatusCode, resp.Status, ErrAuthFailed)
+	default:
+		return "", fmt.Errorf("HTTP error %d: %s", resp.StatusCode, resp.Status)
+	}
+
+	var tokenResp struct {
+		Token string `json:"token"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+		return "", err
+	}
+	if tokenResp.Token == "" {
+		return "", fmt.Errorf("empty token in response from %s", endpoint)
+	}
+	return tokenResp.Token, nil
 }
 
 // makeRequest send request in API DefectDojo

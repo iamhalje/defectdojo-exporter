@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -21,6 +22,8 @@ import (
 var (
 	ddURL               = flag.String("DD_URL", "", "Base URL of the DefectDojo API (e.g. https://defectdojo.example.com)")
 	ddToken             = flag.String("DD_TOKEN", "", "API token used for authenticating requests to DefectDojo")
+	ddUsername          = flag.String("DD_USERNAME", "", "DefectDojo username used to obtain an API token when DD_TOKEN is not set")
+	ddPassword          = flag.String("DD_PASSWORD", "", "DefectDojo password used to obtain an API token when DD_TOKEN is not set")
 	port                = flag.Int("port", 8080, "Port number where the exporter HTTP server will listen")
 	concurrency         = flag.Int("concurrency", 5, "Maximum number of concurrent API requests to DefectDojo")
 	interval            = flag.Duration("interval", 5*time.Minute, "Sleep interval duration between metric collection cycles")
@@ -28,12 +31,17 @@ var (
 	useEngagementUpdate = flag.Bool("use-engagement-update-check", true, "Skip collection if no engagement updates, need disable if vulnerabiltiies aren't added via engagement")
 )
 
+const tokenRetryInterval = 15 * time.Second
+
 func main() {
 	envflag.Parse()
 	buildinfo.Init()
 
-	if *ddURL == "" || *ddToken == "" {
-		log.Fatalf("Both DD_URL and DD_TOKEN must be set")
+	if *ddURL == "" {
+		log.Fatalf("DD_URL must be set")
+	}
+	if *ddToken == "" && (*ddUsername == "" || *ddPassword == "") {
+		log.Fatalf("Either DD_TOKEN or both DD_USERNAME and DD_PASSWORD must be set")
 	}
 
 	prometheus.MustRegister(defectdojo.VulnActiveGauge)
@@ -44,11 +52,36 @@ func main() {
 	prometheus.MustRegister(defectdojo.VulnRiskAcceptedGauge)
 	prometheus.MustRegister(defectdojo.VulnVerifiedGauge)
 	prometheus.MustRegister(defectdojo.VulnMitigatedGauge)
+	prometheus.MustRegister(defectdojo.VulnSLABreachedGauge)
+	prometheus.MustRegister(defectdojo.VulnMitigatedWithinSLAGauge)
+	prometheus.MustRegister(defectdojo.VulnMitigatedOutsideSLAGauge)
+	prometheus.MustRegister(defectdojo.VulnFixTimeDaysSumGauge)
+	prometheus.MustRegister(defectdojo.VulnFixTimeDaysCountGauge)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	go collector.CollectMetrics(*ddURL, *ddToken, *concurrency, *interval, *timeout, *useEngagementUpdate)
+	go func() {
+		token := *ddToken
+		if token == "" {
+			// Token acquisition runs in the background so /healthz and
+			// /metrics are served while DefectDojo is still starting up.
+			for {
+				t, err := defectdojo.FetchAPIToken(*ddURL, *ddUsername, *ddPassword, *timeout)
+				if err == nil {
+					token = t
+					log.Printf("Obtained DefectDojo API token for user %s", *ddUsername)
+					break
+				}
+				if errors.Is(err, defectdojo.ErrAuthFailed) {
+					log.Fatalf("DefectDojo rejected the credentials for user %s: %v", *ddUsername, err)
+				}
+				log.Printf("DefectDojo not ready, retrying token fetch in %s: %v", tokenRetryInterval, err)
+				time.Sleep(tokenRetryInterval)
+			}
+		}
+		collector.CollectMetrics(*ddURL, token, *concurrency, *interval, *timeout, *useEngagementUpdate)
+	}()
 
 	mux := http.NewServeMux()
 	registerHandlers(mux)

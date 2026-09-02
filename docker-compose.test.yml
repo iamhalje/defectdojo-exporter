@@ -1,0 +1,34 @@
+# Testing overlay for the DefectDojo + exporter stack.
+#
+# Kept separate from docker-compose.yml on purpose: the base stack is fully
+# usable without it. Apply it only when you want to seed DefectDojo with
+# deterministic findings and verify the exporter's metrics end to end:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.test.yml up -d
+#   docker compose -f docker-compose.yml -f docker-compose.test.yml run --rm testapp
+#
+# See docs/compose.md for details.
+---
+services:
+  uwsgi:
+    environment:
+      # Lets the test app set mitigation timestamps in the past via the API,
+      # which is required to seed deterministic fix-time and SLA data.
+      DD_EDITABLE_MITIGATED_DATA: "True"
+  testapp:
+    build:
+      context: .
+      dockerfile: testapp/Dockerfile
+    image: "halje/defectdojo-exporter-testapp:${EXPORTER_VERSION:-local}"
+    profiles: ["test"]
+    depends_on:
+      nginx:
+        condition: service_started
+      exporter:
+        condition: service_started
+    environment:
+      DD_URL: "http://nginx:8080"
+      EXPORTER_URL: "http://exporter:8080"
+      DD_USERNAME: "${DD_ADMIN_USER:-admin}"
+      DD_PASSWORD: "${DD_ADMIN_PASSWORD:-Def3ctDojo@Exporter!}"
+    restart: "no"
