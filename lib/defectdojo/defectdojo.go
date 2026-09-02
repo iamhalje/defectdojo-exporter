@@ -9,11 +9,12 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
-// ErrAuthFailed is returned by FetchAPIToken when DefectDojo rejects the
-// provided credentials, as opposed to transient network or availability errors.
+// ErrAuthFailed marks errors caused by DefectDojo rejecting the credentials
+// or the API token, as opposed to transient network or availability errors.
 var ErrAuthFailed = errors.New("defectdojo authentication failed")
 
 const dojoDateLayout = "2006-01-02"
@@ -273,7 +274,14 @@ func makeRequest(link, token string, timeout time.Duration) ([]byte, error) {
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, resp.Status)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		detail := strings.TrimSpace(string(body))
+		// DefectDojo answers 403 for unknown tokens, so treat both 401 and
+		// 403 as auth failures the caller can react to.
+		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+			return nil, fmt.Errorf("HTTP error %d: %s: %s: %w", resp.StatusCode, resp.Status, detail, ErrAuthFailed)
+		}
+		return nil, fmt.Errorf("HTTP error %d: %s: %s", resp.StatusCode, resp.Status, detail)
 	}
 
 	return io.ReadAll(resp.Body)

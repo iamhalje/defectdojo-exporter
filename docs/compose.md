@@ -113,6 +113,27 @@ Reruns are safe — the seed product is recreated from scratch each time. Don't
 run the test overlay against a DefectDojo instance whose data you care about:
 it deletes and recreates the `exporter-testapp` product (nothing else).
 
+## Troubleshooting
+
+**Exporter logs `HTTP error 403 ... {"detail":"Invalid token."}` on the
+products API.** DefectDojo returns 403 (not 401) for any token it doesn't
+recognize. Typical causes:
+
+- A stale `DD_TOKEN` in `.env` — e.g. copied from a previous DefectDojo
+  instance, or kept after `docker compose down -v` wiped the database that
+  issued it. Unset it (the exporter then uses the admin credentials), or
+  replace it with a token from the current instance.
+- The DefectDojo database was reset or the token was deleted in the UI while
+  the exporter kept running.
+
+In both cases the exporter re-authenticates automatically when
+`DD_USERNAME`/`DD_PASSWORD` are available (they are in this compose file);
+with only a static `DD_TOKEN` it keeps logging the 403 until the token is
+corrected.
+
+**`ports are not available ... 8080` on `docker compose up`.** Something on
+the host already uses port 8080 — set `DD_PORT` as described in Quick start.
+
 ## Tear down
 
 ```bash

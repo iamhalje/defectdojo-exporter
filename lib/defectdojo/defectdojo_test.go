@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -230,6 +231,31 @@ func TestFetchAPIToken(t *testing.T) {
 	_, err = FetchAPIToken(ts.URL, "admin", "wrong", 30*time.Second)
 	if !errors.Is(err, ErrAuthFailed) {
 		t.Errorf("Expected ErrAuthFailed for bad credentials, got %v", err)
+	}
+}
+
+func TestFetchProductsInvalidToken(t *testing.T) {
+	// DefectDojo answers 403 (not 401) for unknown tokens; the error must be
+	// classified as an auth failure and carry the response body so the cause
+	// is visible in the logs.
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		if _, err := w.Write([]byte(`{"detail":"Invalid token."}`)); err != nil {
+			t.Errorf("failed to write response: %v", err)
+		}
+	}))
+	defer ts.Close()
+
+	_, err := FetchProducts(ts.URL, "bad-token", 30*time.Second)
+	if err == nil {
+		t.Fatal("expected error for 403 response, got nil")
+	}
+	if !errors.Is(err, ErrAuthFailed) {
+		t.Errorf("expected ErrAuthFailed, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "Invalid token") {
+		t.Errorf("expected error to contain the response body, got %q", err.Error())
 	}
 }
 

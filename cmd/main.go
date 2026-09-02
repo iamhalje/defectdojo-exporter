@@ -62,6 +62,16 @@ func main() {
 	defer stop()
 
 	go func() {
+		// With credentials available the collector can re-authenticate when
+		// DefectDojo rejects the token (stale DD_TOKEN, re-initialized
+		// database, token revoked in the UI).
+		var refreshToken func() (string, error)
+		if *ddUsername != "" && *ddPassword != "" {
+			refreshToken = func() (string, error) {
+				return defectdojo.FetchAPIToken(*ddURL, *ddUsername, *ddPassword, *timeout)
+			}
+		}
+
 		token := *ddToken
 		if token == "" {
 			// Token acquisition runs in the background so /healthz and
@@ -80,7 +90,7 @@ func main() {
 				time.Sleep(tokenRetryInterval)
 			}
 		}
-		collector.CollectMetrics(*ddURL, token, *concurrency, *interval, *timeout, *useEngagementUpdate)
+		collector.CollectMetrics(*ddURL, token, refreshToken, *concurrency, *interval, *timeout, *useEngagementUpdate)
 	}()
 
 	mux := http.NewServeMux()

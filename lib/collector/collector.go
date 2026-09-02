@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -117,22 +118,41 @@ func aggregateFindings(findings []defectdojo.Finding) findingAggregates {
 	return agg
 }
 
-// CollectMetrics main collector
-func CollectMetrics(link, token string, concurrency int, interval time.Duration, timeout time.Duration, useEngagementUpdate bool) {
+// CollectMetrics main collector. refreshToken, when non-nil, is called to
+// obtain a fresh API token after DefectDojo rejects the current one (e.g. a
+// stale DD_TOKEN, or the database was re-initialized under a running
+// exporter).
+func CollectMetrics(link, token string, refreshToken func() (string, error), concurrency int, interval time.Duration, timeout time.Duration, useEngagementUpdate bool) {
 	limiter := make(chan struct{}, concurrency)
 
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
+	// True after a token refresh until the next successful cycle or tick, so
+	// a token that keeps getting rejected doesn't turn into a retry hot loop.
+	refreshed := false
+
 	for {
 		products, err := defectdojo.FetchProducts(link, token, timeout)
 		if err != nil {
+			if errors.Is(err, defectdojo.ErrAuthFailed) && refreshToken != nil && !refreshed {
+				if newToken, rerr := refreshToken(); rerr == nil {
+					token = newToken
+					refreshed = true
+					log.Printf("DefectDojo rejected the API token (%v), obtained a fresh one", err)
+					continue
+				} else {
+					log.Printf("DefectDojo rejected the API token and the refresh failed: %v", rerr)
+				}
+			}
 			// DefectDojo may be temporarily unavailable (e.g. still starting
 			// up); keep serving the last known metrics and retry next cycle.
 			log.Printf("Error fetching products: %v", err)
 			<-ticker.C
+			refreshed = false
 			continue
 		}
+		refreshed = false
 
 		var wg sync.WaitGroup
 

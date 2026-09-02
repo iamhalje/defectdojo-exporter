@@ -98,6 +98,13 @@ obtains its own API token from `/api/v2/api-token-auth/`, retrying until
 DefectDojo is reachable (useful when both start together, e.g. under Docker
 Compose). Invalid credentials are a fatal error.
 
+Note that DefectDojo answers HTTP 403 (`{"detail":"Invalid token."}`) — not
+401 — when it doesn't recognize the token, e.g. a stale `DD_TOKEN` or a
+DefectDojo database that was re-initialized while the exporter kept running.
+As long as `DD_USERNAME`/`DD_PASSWORD` are set the exporter recovers on its
+own by fetching a fresh token; with only a static `DD_TOKEN` the 403 (with the
+response body) is logged so the token can be replaced.
+
 Note: SLA deadlines can pass and findings can be mitigated without any
 engagement being updated. If you rely on the SLA metrics, run with
 `-use-engagement-update-check=false` so every collection cycle refreshes them.
